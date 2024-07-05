@@ -388,7 +388,7 @@ const resolvers = {
                     throw new Error('Chat not found');
                 }
                 const isGroupAdmin = chat.groupAdmins.some(admin => admin.toString() === user._id.toString());
-                if (!isGroupAdmin) {
+                if (!isGroupAdmin) {    
                     throw new Error("Only admin can add user");
                 }
                 const existingUser = chat.users.some(exUser => exUser.toString() === userId.toString());
