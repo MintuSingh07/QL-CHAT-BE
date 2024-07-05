@@ -61,6 +61,7 @@ const typeDefs = `
         deleteGroup(chatId: ID!): DeleteResponse
         makeGroupAdmin(chatId: ID!, userId: ID!): Chat
         sendMessage(chatId: ID!, content: String!): Message
+        addMemberToGroup(userId: ID!, chatId: ID!): Chat
     }
     type Subscription {
         messageAdded(chatId: ID!): Message
@@ -374,6 +375,34 @@ const resolvers = {
                 }
             }
         },
+        addMemberToGroup: async (_, { userId, chatId }, { user }) => {
+            if (!user) {
+                console.log('User is not authenticated');
+                throw new Error('Not authenticated');
+            };
+
+            if (!chatId || !userId) throw new Error("ChatId or Content is missing!!");
+            try {
+                const chat = await Chat.findById(chatId);
+                if (!chat) {
+                    throw new Error('Chat not found');
+                }
+                const isGroupAdmin = chat.groupAdmins.some(admin => admin.toString() === user._id.toString());
+                if (!isGroupAdmin) {
+                    throw new Error("Only admin can add user");
+                }
+                const existingUser = chat.users.some(exUser => exUser.toString() === userId.toString());
+                if (!existingUser) {
+                    let updatedChat = await Chat.findByIdAndUpdate(chatId, { $addToSet: { users: userId } }, { new: true });
+                    await updatedChat.populate("users", "-password");
+                    return updatedChat;
+                } else {
+                    throw new Error('User already exist int the group');
+                }
+            } catch (error) {
+                throw new Error(error);
+            }
+        }
     },
     Subscription: {
         messageAdded: {
